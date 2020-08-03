@@ -51,7 +51,7 @@ colorizer _ isFg = do
 
 windowMenu :: X ()
 windowMenu = withFocused $ \w -> do
-    tags <- asks (workspaces . config)
+    tags <- asks (unClickable . workspaces . config)
     Rectangle x y wh ht <- getSize w
     Rectangle sx sy swh sht <- gets $ screenRect . W.screenDetail . W.current . windowset
     let originFractX = (fi x - fi sx + fi wh / 2) / fi swh
@@ -67,6 +67,15 @@ windowMenu = withFocused $ \w -> do
                   [ ("Move to " ++ tag, windows $ W.shift tag)
                     | tag <- tags ]
     runSelectedAction gsConfig actions
+  where
+    -- Undo clickable from xmonad.hs
+    -- Assume splitOnOnce returns two elements
+    unClickable :: [String] -> [String]
+    unClickable ss = map (flip (!!) 0 . splitOnOnce '<' . flip (!!) 1 . splitOnOnce '>') ss
+      where
+        splitOnOnce c cs = case break (==c) cs of
+          (a, _:b) -> [a, b]
+          (a, _) -> [a]
 
 getSize :: Window -> X (Rectangle)
 getSize w = do
